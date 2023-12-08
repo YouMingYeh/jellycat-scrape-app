@@ -1,0 +1,8 @@
+twder
+pandas
+ipywidgets
+selenium
+pyautogui
+flask
+flask_cors
+fuzzywuzzy
