@@ -19,18 +19,25 @@ This is a simple web scraper that will scrape the [Jellycat](https://www.jellyca
 
 ## Installation
 
+### Download
+```
+git clone https://github.com/YouMingYeh/jellycat-scrape-app/
+cd jellycat-scrape-app
+```
 ### Client
-
-    1. `cd client`
-    2. `npm install`
-    3. `npm run dev`
+```
+cd client
+npm i
+npm run dev
+```
 
 ### Server
-
-    1. `cd server`
-    2. `pip install -r requirements.txt`
-    3. `python server.py`
+```
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python server.py
+```
 
 ## Usage
-
 open `http://localhost:3000/` in your browser
