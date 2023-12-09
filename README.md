@@ -12,10 +12,11 @@ This is a simple web scraper that will scrape the [Jellycat](https://www.jellyca
 
 ## Prerequisites
 
-1. Python 3.11.5
-2. Node 21.1.0
+1. Python 3.11.5 (https://www.python.org/)
+2. Node 21.1.0 (https://nodejs.org/en)
 3. Chrome Driver (Download from: https://googlechromelabs.github.io/chrome-for-testing/)
 4. Windows 10 (Not tested on other OS)
+5. git (https://git-scm.com/)
 
 ## Installation
 
