@@ -81,27 +81,35 @@ export default function Home() {
     <main className="flex min-h-screen items-start justify-center p-16 space-x-8 space-y-8 flex-wrap overflow-scroll">
       <Calculator />
 
-      <RatesTable rates={rates} handleRatesClick={handleRatesClick} />
+      {rates && (
+        <RatesTable rates={rates} handleRatesClick={handleRatesClick} />
+      )}
 
       <div className="flex w-screen p-16 space-x-8 items-center justify-center">
         <ComparePrices />
       </div>
 
-      <Costs
-        data={jellycat}
-        handleDataClick={handleJellycatClick}
-        title="Jellycat"
-      />
-      <Costs
-        data={selfridge}
-        handleDataClick={handleSelfridgeClick}
-        title="Selfridge"
-      />
-      <Costs
-        data={campusgifts}
-        handleDataClick={handleCampusgiftsClick}
-        title="Campusgifts"
-      />
+      {jellycat && (
+        <Costs
+          data={jellycat}
+          handleDataClick={handleJellycatClick}
+          title="Jellycat"
+        />
+      )}
+      {selfridge && (
+        <Costs
+          data={selfridge}
+          handleDataClick={handleSelfridgeClick}
+          title="Selfridge"
+        />
+      )}
+      {campusgifts && (
+        <Costs
+          data={campusgifts}
+          handleDataClick={handleCampusgiftsClick}
+          title="Campusgifts"
+        />
+      )}
 
       {prices && (
         <Prices
