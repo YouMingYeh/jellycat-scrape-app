@@ -1,2 +1,6 @@
 # Ignore Python virtual environment files
 venv/
+
+server/certificate.pem
+server/private-key.pem
+server/csr.pem
