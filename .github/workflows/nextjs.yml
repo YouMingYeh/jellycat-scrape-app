@@ -54,11 +54,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          path: |
-            ${{ github.workspace }}/client
-            ${{ github.workspace }}/client/node_modules
           node-version: "20"
           cache: ${{ steps.detect-package-manager.outputs.manager }}
+          cache-dependency-path: '**/package-lock.json'
       - name: Setup Pages
         uses: actions/configure-pages@v4
         with:
