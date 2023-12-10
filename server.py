@@ -35,9 +35,9 @@ def modify_price(price):
     # 如果個位數和十位數的組合小於50，將十位數設為8
     # 否則，進位到下一個百位，將十位數設為2
     if integer_part % 100 < 50:
-        modified_integer = (integer_part // 100) * 100 + 80
+        modified_integer = (integer_part / 100) * 100 + 80
     else:
-        modified_integer = ((integer_part // 100) + 1) * 100 + 20
+        modified_integer = ((integer_part / 100) + 1) * 100 + 20
 
     return modified_integer
 
@@ -50,7 +50,9 @@ def compute_jellycat_price(price):
         product_name = qutation[0]
         
         # 根據價格和產品名稱應用不同的規則
-        if price < 40:
+        if 'bag' in product_name.lower():
+            new_price = price * 1.2 * EUR
+        elif price < 40:
             new_price = price * 1.15 * EUR
         elif price > 40 and price <= 100:
             new_price = price * 1.1 * EUR
@@ -58,9 +60,6 @@ def compute_jellycat_price(price):
             new_price = price * 1.05 * EUR
 
         new_price = round(new_price, 2)
-        # 如果產品名稱中包含 'bag'，應用額外規則
-        if 'bag' in product_name.lower():
-            new_price *= 1.2
 
 
         modified_price = modify_price(new_price)
