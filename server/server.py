@@ -8,12 +8,17 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import pyautogui
+from pyvirtualdisplay.display import Display
+import Xlib.display
+import pyautogui
+import os
 import time
 import copy
+import logging
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
+DRIVER_PATH = '/usr/local/bin/chromedriver.exe'
 app = Flask(__name__)
 CORS(app)
 
@@ -140,25 +145,32 @@ def compare_prices(quotation, jelly_cost, selfridge_cost, campusgifts_cost):
 
 class Crawler:
     def __init__(self):
+        self.logger = logging.getLogger(__name__)
+
         self.jellycat = list()
         self.selfridge = list()
         self.campusgifts = list()
     
     def jellycat_webSelenium(self):
+        self.logger.info('Starting jellycat_webSelenium')
         jellycat_data_store1 = list()
         jellycat_data_store2 = list()
         jellycat_data_store3 = list()
         jellycat_data_store4 = list()
         # set webdriver service
-        service = Service(executable_path="./chromedriver.exe")
+        # service = Service(executable_path=DRIVER_PATH)
         # set webdriver option
         option = webdriver.ChromeOptions()
-        # set web always opens
+        option = webdriver.ChromeOptions()
+        option.add_argument("--disable-gpu")
+        option.add_argument("--no-sandbox")
+        option.add_argument("--disable-dev-shm-usage")
+        option.add_argument("--disable-extensions")
+        option.add_argument("--disable-extension")
         option.add_experimental_option("detach", True)
-        # error notion skip
         option.add_experimental_option("excludeSwitches", ["enable-logging"])
 
-        driver = webdriver.Chrome(service=service, options=option)
+        driver = webdriver.Chrome(options=option)
         driver.get("https://www.jellycat.com/eu/all-soft-toys/?stock_text=in%20stock&page")  # URL
         time.sleep(2)
 
@@ -205,12 +217,18 @@ class Crawler:
     def selfridge_webSelenium(self):
         selfridge_data_store1 = list()
         selfridge_data_store2 = list()
-        service = Service(executable_path="./chromedriver.exe")
+        # service = Service(executable_path=DRIVER_PATH)
         option = webdriver.ChromeOptions()
+        option = webdriver.ChromeOptions()
+        option.add_argument("--disable-gpu")
+        option.add_argument("--no-sandbox")
+        option.add_argument("--disable-dev-shm-usage")
+        option.add_argument("--disable-extensions")
+        option.add_argument("--disable-extension")
         option.add_experimental_option("detach", True)
         option.add_experimental_option("excludeSwitches", ["enable-logging"])
         for t in range(1, 7, 1):
-            driver = webdriver.Chrome(service=service, options=option)
+            driver = webdriver.Chrome(options=option)
             driver.get("https://www.selfridges.com/TW/en/cat/jellycat/?pn=" + str(t))
             time.sleep(2)
 
@@ -237,11 +255,17 @@ class Crawler:
         campusgifts_data_store2 = list()
         campusgifts_data_store3 = list()
 
-        service = Service(executable_path="./chromedriver.exe")
+        # service = Service(executable_path="DRIVER_PATH")
         option = webdriver.ChromeOptions()
+        option = webdriver.ChromeOptions()
+        option.add_argument("--disable-gpu")
+        option.add_argument("--no-sandbox")
+        option.add_argument("--disable-dev-shm-usage")
+        option.add_argument("--disable-extensions")
+        option.add_argument("--disable-extension")
         option.add_experimental_option("detach", True)
         option.add_experimental_option("excludeSwitches", ["enable-logging"])
-        driver = webdriver.Chrome(service=service, options=option)
+        driver = webdriver.Chrome(options=option)
         driver.get(
             "https://www.campusgifts.co.uk/gifts-by-brand/jellycat/browse-all?product_list_limit=96"
         )
@@ -452,6 +476,9 @@ def compare_prices_with_names_api():
 
 
 if __name__ == '__main__':
+    disp = Display(visible=True, size=(1366, 768), backend="xvfb", use_xauth=True)
+    disp.start()
+    pyautogui._pyautogui_x11._display = Xlib.display.Display(os.environ['DISPLAY'])
     crawler.jellycat_webSelenium()
     crawler.selfridge_webSelenium()
     crawler.campusgifts_webdriver()
@@ -462,4 +489,4 @@ if __name__ == '__main__':
     print("GBP: ")
     print(GBP)
 
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0',port=5000, debug=True)

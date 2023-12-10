@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = "http://20.239.231.243:5000";
 
 export const updateRate = async () => {
   const response = await fetch(`${BASE_URL}/update_rate`);
