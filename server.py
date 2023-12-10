@@ -359,7 +359,7 @@ def get_all():
     
     return jsonify({'jellycat': format_data(crawler.jellycat), 'selfridge': format_data(crawler.selfridge), 'campusgifts': format_data(crawler.campusgifts)})
 
-@app.route('/scrape', methods=['POST'])
+@app.route('/', methods=['POST'])scrape
 def scrape():
     global crawler
     crawler.jellycat_webSelenium()
