@@ -1,10 +1,9 @@
 twder
 pandas
-ipywidgets
 selenium
 pyautogui
 flask
 flask_cors
 fuzzywuzzy
 pyvirtualdisplay
-gunicorn
+python-Levenshtein

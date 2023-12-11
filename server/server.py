@@ -1,11 +1,9 @@
 # !pip install twder
 import twder
 import pandas as pd
-from ipywidgets import interact, widgets
 
 # Download this first: https://googlechromelabs.github.io/chrome-for-testing/
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 import pyautogui
 from pyvirtualdisplay.display import Display
@@ -18,21 +16,25 @@ import logging
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-DRIVER_PATH = '/usr/local/bin/chromedriver.exe'
+
+DRIVER_PATH = "/usr/local/bin/chromedriver.exe"
 app = Flask(__name__)
 CORS(app)
+
 
 def get_rate(currency):
     data = twder.now(currency)
     df = pd.DataFrame(data)
-    df.index = ['時間', '現金買入', '現金賣出', '即期買入', '即期賣出']
+    df.index = ["時間", "現金買入", "現金賣出", "即期買入", "即期賣出"]
     return df.to_dict()
+
 
 def format_data(data):
     parsed_data = {}
     for item in data:
         parsed_data[item[0]] = item[1]
     return parsed_data
+
 
 def modify_price(price):
     integer_part = int(price)
@@ -46,16 +48,16 @@ def modify_price(price):
 
     return modified_integer
 
-    
+
 def compute_jellycat_price(price):
     jellycat_price = copy.deepcopy(price)
     for qutation in jellycat_price:
-        price_str = qutation[1].replace('€', '')  # 去除價格字串中的 '€' 符號
+        price_str = qutation[1].replace("€", "")  # 去除價格字串中的 '€' 符號
         price = float(price_str)  # 將去除 '€' 符號後的價格轉換為浮點數
         product_name = qutation[0]
-        
+
         # 根據價格和產品名稱應用不同的規則
-        if 'bag' in product_name.lower():
+        if "bag" in product_name.lower():
             new_price = price * 1.2 * EUR
         elif price < 40:
             new_price = price * 1.15 * EUR
@@ -66,31 +68,32 @@ def compute_jellycat_price(price):
 
         new_price = round(new_price, 2)
 
-
         modified_price = modify_price(new_price)
 
         qutation[1] = modified_price
-        
+
     return jellycat_price
+
 
 def compute_jellycat_cost(price):
     jellycat_cost = copy.deepcopy(price)
     for jelly_cost in jellycat_cost:
-        price_str = jelly_cost[1].replace('€', '')  # 去除價格字串中的 '€' 符號
+        price_str = jelly_cost[1].replace("€", "")  # 去除價格字串中的 '€' 符號
         price = float(price_str)  # 將去除 '€' 符號後的價格轉換為浮點數
 
         # 將價格乘以0.95
-        new_price = round(price * 0.95 * EUR, 2) 
+        new_price = round(price * 0.95 * EUR, 2)
 
         jelly_cost[1] = new_price
         jelly_cost = jelly_cost[:2]
     return jellycat_cost
 
+
 def compute_selfridge_cost(price):
-    #selfridge成本價
+    # selfridge成本價
     selfridge_costs = copy.deepcopy(price)
     for selfridge_cost in selfridge_costs:
-        price_str = selfridge_cost[1].replace('$', '').replace(',', '')
+        price_str = selfridge_cost[1].replace("$", "").replace(",", "")
         price = float(price_str)
 
         # 將價格乘以0.9
@@ -99,49 +102,56 @@ def compute_selfridge_cost(price):
         selfridge_cost[1] = new_price
     return selfridge_costs
 
+
 def compute_campusgifts_cost(price):
     campusgifts_costs = copy.deepcopy(price)
-    #Campusgifts成本價
+    # Campusgifts成本價
     for campusgifts_cost in campusgifts_costs:
-
-        price_str = campusgifts_cost[1].replace('£', '').replace(',', '')
+        price_str = campusgifts_cost[1].replace("£", "").replace(",", "")
         price = float(price_str)
 
         # 將價格乘以1.1
         new_price = round(price * 1.1 * GBP, 2)
 
         campusgifts_cost[1] = new_price
-    
+
     return campusgifts_costs
 
-#代購價與成本價間的比價
+
+# 代購價與成本價間的比價
 def compare_prices(quotation, jelly_cost, selfridge_cost, campusgifts_cost):
     differenciate_result = {}
 
-    if quotation[1] == None: 
+    if quotation[1] == None:
         return differenciate_result
-    else :
+    else:
         q_price = quotation[1]
-    
-    if jelly_cost[1] == None: 
+
+    if jelly_cost[1] == None:
         j_diff = -9999
     else:
         j_diff = quotation[1] - jelly_cost[1]
-        
+
     if selfridge_cost[1] == None:
         s_diff = -9999
     else:
         s_diff = quotation[1] - selfridge_cost[1]
-        
+
     if campusgifts_cost[1] == None:
         c_diff = -9999
     else:
         c_diff = quotation[1] - campusgifts_cost[1]
-        
+
     # 將結果儲存到字典中
-    differenciate_result[quotation[0]] = {'quotation_price': q_price, 'jelly_cost_diff': j_diff, 'selfridge_cost_diff': s_diff, 'campusgifts_cost_diff': c_diff}
+    differenciate_result[quotation[0]] = {
+        "quotation_price": q_price,
+        "jelly_cost_diff": j_diff,
+        "selfridge_cost_diff": s_diff,
+        "campusgifts_cost_diff": c_diff,
+    }
 
     return differenciate_result
+
 
 class Crawler:
     def __init__(self):
@@ -150,9 +160,9 @@ class Crawler:
         self.jellycat = list()
         self.selfridge = list()
         self.campusgifts = list()
-    
+
     def jellycat_webSelenium(self):
-        self.logger.info('Starting jellycat_webSelenium')
+        self.logger.info("Starting jellycat_webSelenium")
         jellycat_data_store1 = list()
         jellycat_data_store2 = list()
         jellycat_data_store3 = list()
@@ -171,7 +181,9 @@ class Crawler:
         option.add_experimental_option("excludeSwitches", ["enable-logging"])
 
         driver = webdriver.Chrome(options=option)
-        driver.get("https://www.jellycat.com/eu/all-soft-toys/?stock_text=in%20stock&page")  # URL
+        driver.get(
+            "https://www.jellycat.com/eu/all-soft-toys/?stock_text=in%20stock&page"
+        )  # URL
         time.sleep(2)
 
         data_index = driver.find_element(
@@ -205,14 +217,13 @@ class Crawler:
                 else:
                     jellycat_data_store4.append(j.text.split("\n"))
         driver.close()
-        
+
         self.jellycat.extend(jellycat_data_store1)
         self.jellycat.extend(jellycat_data_store2)
         self.jellycat.extend(jellycat_data_store3)
         self.jellycat.extend(jellycat_data_store4)
-        
-        print(self.jellycat)
 
+        print(self.jellycat)
 
     def selfridge_webSelenium(self):
         selfridge_data_store1 = list()
@@ -244,11 +255,9 @@ class Crawler:
                 elif t > 3 and 7 >= t:
                     selfridge_data_store2.append([name[i].text, price[i].text])
             driver.close()
-            
+
         self.selfridge.extend(selfridge_data_store1)
         self.selfridge.extend(selfridge_data_store2)
-        
-
 
     def campusgifts_webdriver(self):
         campusgifts_data_store1 = list()
@@ -301,7 +310,8 @@ class Crawler:
             driver.switch_to.window(driver.window_handles[0])
             time.sleep(2)
             data_index = driver.find_elements(
-                By.CSS_SELECTOR, "#amasty-shopby-product-list > div:nth-of-type(2) > ol >li"
+                By.CSS_SELECTOR,
+                "#amasty-shopby-product-list > div:nth-of-type(2) > ol >li",
             )
 
             for data in data_index:
@@ -327,25 +337,28 @@ class Crawler:
                     campusgifts_data_store3.append([name.text, price.text])
 
         driver.close()
-        
+
         self.campusgifts.extend(campusgifts_data_store1)
         self.campusgifts.extend(campusgifts_data_store2)
         self.campusgifts.extend(campusgifts_data_store3)
-crawler = Crawler() 
+
+
+crawler = Crawler()
 
 EUR = 34
-GBP = 39 
+GBP = 39
 
-@app.route('/update_rate', methods=['GET'])
+
+@app.route("/update_rate", methods=["GET"])
 def update_rate():
     global EUR
     global GBP
-    EUR = float((get_rate('EUR'))[0]['現金賣出'])
-    GBP = float((get_rate('GBP'))[0]['現金賣出'])
-    return jsonify({'EUR': EUR, 'GBP': GBP})
+    EUR = float((get_rate("EUR"))[0]["現金賣出"])
+    GBP = float((get_rate("GBP"))[0]["現金賣出"])
+    return jsonify({"EUR": EUR, "GBP": GBP})
 
 
-@app.route('/get_jellycat', methods=['GET'])
+@app.route("/get_jellycat", methods=["GET"])
 def get_jellycat():
     global EUR
     global GBP
@@ -353,7 +366,8 @@ def get_jellycat():
     jellycat_price = compute_jellycat_cost(crawler.jellycat)
     return jsonify(format_data(jellycat_price))
 
-@app.route('/get_selfridge', methods=['GET'])
+
+@app.route("/get_selfridge", methods=["GET"])
 def get_selfridge():
     global EUR
     global GBP
@@ -361,7 +375,8 @@ def get_selfridge():
     selfridge_price = compute_selfridge_cost(crawler.selfridge)
     return jsonify(format_data(selfridge_price))
 
-@app.route('/get_campusgifts', methods=['GET'])
+
+@app.route("/get_campusgifts", methods=["GET"])
 def get_campusgifts():
     global EUR
     global GBP
@@ -369,54 +384,70 @@ def get_campusgifts():
     campusgifts_price = compute_campusgifts_cost(crawler.campusgifts)
     return jsonify(format_data(campusgifts_price))
 
-@app.route('/get_price', methods=['GET'])
+
+@app.route("/get_price", methods=["GET"])
 def get_price():
     global EUR
     global GBP
     global crawler
     jellycat_price = compute_jellycat_price(crawler.jellycat)
-    return jsonify({'jellycat': format_data(jellycat_price)})
+    return jsonify({"jellycat": format_data(jellycat_price)})
 
-@app.route('/get_all', methods=['GET'])
+
+@app.route("/get_all", methods=["GET"])
 def get_all():
     global crawler
-    
-    return jsonify({'jellycat': format_data(crawler.jellycat), 'selfridge': format_data(crawler.selfridge), 'campusgifts': format_data(crawler.campusgifts)})
 
-@app.route('/scrape', methods=['POST'])
+    return jsonify(
+        {
+            "jellycat": format_data(crawler.jellycat),
+            "selfridge": format_data(crawler.selfridge),
+            "campusgifts": format_data(crawler.campusgifts),
+        }
+    )
+
+
+@app.route("/scrape", methods=["POST"])
 def scrape():
     global crawler
     crawler.jellycat_webSelenium()
     crawler.selfridge_webSelenium()
     crawler.campusgifts_webdriver()
-    return jsonify({'jellycat': format_data(crawler.jellycat), 'selfridge': format_data(crawler.selfridge), 'campusgifts': format_data(crawler.campusgifts)})
+    return jsonify(
+        {
+            "jellycat": format_data(crawler.jellycat),
+            "selfridge": format_data(crawler.selfridge),
+            "campusgifts": format_data(crawler.campusgifts),
+        }
+    )
 
-@app.route('/scrape_specific', methods=['POST'])
+
+@app.route("/scrape_specific", methods=["POST"])
 def scrape_specific():
     global crawler
-    website = request.json.get('website')
-    if website == 'jellycat':
+    website = request.json.get("website")
+    if website == "jellycat":
         crawler.jellycat_webSelenium()
-        return jsonify({'jellycat': format_data(crawler.jellycat)})
-    elif website == 'selfridge':
+        return jsonify({"jellycat": format_data(crawler.jellycat)})
+    elif website == "selfridge":
         crawler.selfridge_webSelenium()
-        return jsonify({'selfridge': format_data(crawler.selfridge)})
-    elif website == 'campusgifts':
+        return jsonify({"selfridge": format_data(crawler.selfridge)})
+    elif website == "campusgifts":
         crawler.campusgifts_webdriver()
-        return jsonify({'campusgifts': format_data(crawler.campusgifts)})
+        return jsonify({"campusgifts": format_data(crawler.campusgifts)})
     else:
-        return jsonify({'error': 'Invalid website'})
-
+        return jsonify({"error": "Invalid website"})
 
 
 from fuzzywuzzy import process
 
-@app.route('/compare_prices', methods=['GET'])
+
+@app.route("/compare_prices", methods=["GET"])
 def compare_prices_api():
     global crawler
-    name = request.args.get('name')
+    name = request.args.get("name")
     if name is None:
-        return jsonify({'error': 'Missing name parameter'})
+        return jsonify({"error": "Missing name parameter"})
 
     jellycat_price = compute_jellycat_price(crawler.jellycat)
     jellycat_price_dict = format_data(jellycat_price)
@@ -438,18 +469,21 @@ def compare_prices_api():
     selfridge_cost = [name, selfridge_cost_dict.get(name_selfridge_cost)]
     campusgifts_cost = [name, campusgifts_cost_dict.get(name_campusgifts_cost)]
 
-    differenciate_result = compare_prices(quotation, jelly_cost, selfridge_cost, campusgifts_cost)
+    differenciate_result = compare_prices(
+        quotation, jelly_cost, selfridge_cost, campusgifts_cost
+    )
     return jsonify(differenciate_result)
 
-@app.route('/compare_prices_with_names', methods=['GET'])
+
+@app.route("/compare_prices_with_names", methods=["GET"])
 def compare_prices_with_names_api():
     global crawler
-    jellycat_name = request.args.get('jellycat_name')
-    selfridge_name = request.args.get('selfridge_name')
-    campusgifts_name = request.args.get('campusgifts_name')
-    
+    jellycat_name = request.args.get("jellycat_name")
+    selfridge_name = request.args.get("selfridge_name")
+    campusgifts_name = request.args.get("campusgifts_name")
+
     if jellycat_name is None:
-        return jsonify({'error': 'Missing name parameter'})
+        return jsonify({"error": "Missing name parameter"})
 
     jellycat_price = compute_jellycat_price(crawler.jellycat)
     jellycat_price_dict = format_data(jellycat_price)
@@ -461,32 +495,48 @@ def compare_prices_with_names_api():
     campusgifts_cost_dict = format_data(campusgifts_cost)
 
     # Find the most similar name in each dictionary
-    name_jellycat_price = process.extractOne(jellycat_name, jellycat_price_dict.keys())[0]
+    name_jellycat_price = process.extractOne(jellycat_name, jellycat_price_dict.keys())[
+        0
+    ]
     name_jellycat_cost = process.extractOne(jellycat_name, jellycat_cost_dict.keys())[0]
-    name_selfridge_cost = process.extractOne(selfridge_name, selfridge_cost_dict.keys())[0]
-    name_campusgifts_cost = process.extractOne(campusgifts_name, campusgifts_cost_dict.keys())[0]
+    name_selfridge_cost = process.extractOne(
+        selfridge_name, selfridge_cost_dict.keys()
+    )[0]
+    name_campusgifts_cost = process.extractOne(
+        campusgifts_name, campusgifts_cost_dict.keys()
+    )[0]
 
     quotation = [jellycat_name, jellycat_price_dict.get(name_jellycat_price)]
     jelly_cost = [name_jellycat_cost, jellycat_cost_dict.get(name_jellycat_cost)]
     selfridge_cost = [name_selfridge_cost, selfridge_cost_dict.get(name_selfridge_cost)]
-    campusgifts_cost = [name_campusgifts_cost, campusgifts_cost_dict.get(name_campusgifts_cost)]
+    campusgifts_cost = [
+        name_campusgifts_cost,
+        campusgifts_cost_dict.get(name_campusgifts_cost),
+    ]
 
-    differenciate_result = compare_prices(quotation, jelly_cost, selfridge_cost, campusgifts_cost)
+    differenciate_result = compare_prices(
+        quotation, jelly_cost, selfridge_cost, campusgifts_cost
+    )
     return jsonify(differenciate_result)
 
 
-if __name__ == '__main__':
-    disp = Display(visible=True, size=(1366, 768), backend="xvfb", use_xauth=True)
-    disp.start()
-    pyautogui._pyautogui_x11._display = Xlib.display.Display(os.environ['DISPLAY'])
-    crawler.jellycat_webSelenium()
-    crawler.selfridge_webSelenium()
-    crawler.campusgifts_webdriver()
-    EUR = float((get_rate('EUR'))[0]['現金賣出'])
-    print("EUR: ")
-    print(EUR)
-    GBP = float((get_rate('GBP'))[0]['現金賣出'])
-    print("GBP: ")
-    print(GBP)
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"message": "Hello World!"})
 
-    app.run(host='0.0.0.0',port=5000)
+
+disp = Display(visible=True, size=(1366, 768), backend="xvfb", use_xauth=True)
+disp.start()
+pyautogui._pyautogui_x11._display = Xlib.display.Display(os.environ["DISPLAY"])
+crawler.jellycat_webSelenium()
+crawler.selfridge_webSelenium()
+crawler.campusgifts_webdriver()
+EUR = float((get_rate("EUR"))[0]["現金賣出"])
+print("EUR: ")
+print(EUR)
+GBP = float((get_rate("GBP"))[0]["現金賣出"])
+print("GBP: ")
+print(GBP)
+
+if __name__ == "__main__":
+    app.run()
